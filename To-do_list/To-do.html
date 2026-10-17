@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My To-Do List</title>
+
+    <!-- CSS file -->
+    <link rel="stylesheet" href="To-do.css">
+
+    <!-- Icons from Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    >
+</head>
+
+<body>
+
+    <main class="todo-container">
+
+        <!-- Header Section -->
+        <header class="todo-header">
+            <div class="header-icon">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+
+            <div>
+                <h1>My To-Do List</h1>
+                <p>Organize your day, one task at a time.</p>
+            </div>
+        </header>
+
+        <!-- Task Input Section -->
+        <section class="add-task-section">
+            <h2><i class="fa-solid fa-circle-plus"></i> Add a New Task</h2>
+
+            <form id="taskForm">
+
+                <div class="input-group">
+                    <label for="taskInput">Task Name</label>
+                    <input
+                        type="text"
+                        id="taskInput"
+                        placeholder="What do you need to do?"
+                        required
+                    >
+                </div>
+
+                <div class="input-group">
+                    <label for="taskDate">
+                        <i class="fa-regular fa-calendar"></i> Due Date
+                    </label>
+                    <input type="date" id="taskDate">
+                </div>
+
+                <!-- Priority Selection -->
+                <div class="input-group">
+                    <label for="taskPriority">
+                        <i class="fa-solid fa-flag"></i> Priority
+                    </label>
+
+                    <select id="taskPriority">
+                        <option value="low">🟢 Low Priority</option>
+                        <option value="medium" selected>🟡 Medium Priority</option>
+                        <option value="high">🔴 High Priority</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="addTaskBtn">
+                    <i class="fa-solid fa-plus"></i> Add Task
+                </button>
+
+            </form>
+        </section>
+
+        <!-- Task Summary -->
+        <section class="task-summary">
+            <div class="summary-card">
+                <i class="fa-solid fa-list"></i>
+                <span>All Tasks</span>
+                <strong id="totalTasks">0</strong>
+            </div>
+
+            <div class="summary-card">
+                <i class="fa-regular fa-clock"></i>
+                <span>Pending</span>
+                <strong id="pendingTasks">0</strong>
+            </div>
+
+            <div class="summary-card">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Completed</span>
+                <strong id="completedTasks">0</strong>
+            </div>
+        </section>
+
+        <!-- Task Filters -->
+        <section class="task-section">
+
+            <div class="task-section-header">
+                <h2><i class="fa-solid fa-list-ul"></i> My Tasks</h2>
+
+                <div class="task-filters">
+                    <button type="button" class="filter-btn active" data-filter="all">
+                        All
+                    </button>
+
+                    <button type="button" class="filter-btn" data-filter="pending">
+                        Pending
+                    </button>
+
+                    <button type="button" class="filter-btn" data-filter="completed">
+                        Completed
+                    </button>
+                </div>
+            </div>
+
+            <!-- Priority Guide -->
+            <div class="priority-guide">
+                <span class="priority-label high-priority">
+                    <i class="fa-solid fa-circle"></i> High
+                </span>
+
+                <span class="priority-label medium-priority">
+                    <i class="fa-solid fa-circle"></i> Medium
+                </span>
+
+                <span class="priority-label low-priority">
+                    <i class="fa-solid fa-circle"></i> Low
+                </span>
+            </div>
+
+            <!-- JavaScript will insert tasks here -->
+            <ul id="taskList" class="task-list">
+
+                <!-- Empty State -->
+                <li id="emptyState" class="empty-state">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <h3>No tasks yet!</h3>
+                    <p>Add your first task to get started.</p>
+                </li>
+
+            </ul>
+
+        </section>
+
+        <!-- Footer -->
+        <footer class="todo-footer">
+            <p>
+                <i class="fa-solid fa-heart"></i>
+                Plan smart. Stay focused. Get things done.
+            </p>
+        </footer>
+
+    </main>
+
+    <!-- JavaScript file -->
+    <script src="To-do.js"></script>
+
+</body>
+</html>
