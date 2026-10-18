@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pomodoro timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1EC; --surface:#FFFFFF; --ink:#1B2A29; --muted:#5C6B69; --line:#D3DAD5;
+  --work:#0E6B68; --rest:#9A5F0A; --accent:var(--work); --on-accent:#FFFFFF;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1A19; --surface:#162524; --ink:#E6EFEC; --muted:#93A7A3; --line:#27403D;
+    --work:#4FC3BC; --rest:#F0B84B; --on-accent:#0F1A19; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1A19; --surface:#162524; --ink:#E6EFEC; --muted:#93A7A3; --line:#27403D;
+  --work:#4FC3BC; --rest:#F0B84B; --on-accent:#0F1A19; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; background:var(--bg); color:var(--ink);
+  font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+  display:flex; justify-content:center; padding:24px 16px 40px;
+}
+body[data-mode="break"]{--accent:var(--rest)}
+main{width:100%; max-width:440px; display:flex; flex-direction:column; align-items:center; gap:28px}
+.dial{position:relative; width:min(78vw,300px); aspect-ratio:1}
+.dial svg{width:100%; height:100%; transform:rotate(-90deg)}
+.track{fill:none; stroke:var(--line); stroke-width:10}
+.bar{fill:none; stroke:var(--accent); stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset .25s linear, stroke .4s}
+.readout{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px}
+.phase{font-size:1.1rem; font-weight:600; color:var(--accent)}
+.time{font-size:clamp(2.6rem,13vw,3.6rem); font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1}
+.count{font-size:.95rem; color:var(--muted)}
+.controls{display:flex; gap:10px; width:100%}
+button{
+  font:inherit; font-weight:600; border-radius:12px; padding:14px 18px; cursor:pointer;
+  border:1.5px solid var(--line); background:var(--surface); color:var(--ink); flex:1;
+}
+button.primary{flex:2; background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-size:1.05rem}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+button:disabled{opacity:.5; cursor:not-allowed}
+.settings{width:100%; background:var(--surface); border:1.5px solid var(--line); border-radius:16px; padding:18px; display:grid; gap:16px}
+.row label{display:block; font-weight:600; margin-bottom:6px}
+.field{display:flex; gap:8px}
+input,select{
+  font:inherit; color:var(--ink); background:var(--bg); border:1.5px solid var(--line);
+  border-radius:10px; padding:10px 12px; min-width:0;
+}
+input{flex:1; font-variant-numeric:tabular-nums}
+select{flex:1}
+.msg{min-height:1.2em; margin:0; font-size:.9rem; color:var(--muted)}
+.msg.err{color:#B3261E}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .msg.err{color:#FF8A80}}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+@media (prefers-reduced-motion: reduce){.bar{transition:none}}
+</style>
+</head>
+<body data-mode="work">
+<main>
+  <div class="dial">
+    <svg viewBox="0 0 300 300" aria-hidden="true">
+      <circle class="track" cx="150" cy="150" r="130"/>
+      <circle class="bar" id="bar" cx="150" cy="150" r="130"/>
+    </svg>
+    <div class="readout">
+      <div class="phase" id="phase">Focus</div>
+      <div class="time" id="time">25:00</div>
+      <div class="count" id="count">0 sessions done</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="primary" id="toggle">Start</button>
+    <button id="skip" title="Skip to the next phase">Skip</button>
+    <button id="reset">Reset</button>
+  </div>
+
+  <section class="settings" aria-label="Timer lengths">
+    <div class="row">
+      <label for="workVal">Focus length</label>
+      <div class="field">
+        <input id="workVal" type="number" inputmode="decimal" min="0" step="any" value="25">
+        <select id="workUnit" aria-label="Focus length unit"><option value="m">minutes</option><option value="h">hours</option></select>
+      </div>
+    </div>
+    <div class="row">
+      <label for="breakVal">Break length</label>
+      <div class="field">
+        <input id="breakVal" type="number" inputmode="decimal" min="0" step="any" value="5">
+        <select id="breakUnit" aria-label="Break length unit"><option value="m">minutes</option><option value="h">hours</option></select>
+      </div>
+    </div>
+    <p class="msg" id="msg">Pause the timer to change the lengths.</p>
+  </section>
+  <div class="sr" role="status" aria-live="polite" id="live"></div>
+</main>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var C=2*Math.PI*130;
+  var bar=$("bar"); bar.style.strokeDasharray=C;
+  var mode="work", total=0, remaining=0, running=false, endAt=0, timer=null, sessions=0, audio=null;
+  var KEY="pomodoro-settings";
+
+  function save(){try{localStorage.setItem(KEY,JSON.stringify({
+    wv:$("workVal").value,wu:$("workUnit").value,bv:$("breakVal").value,bu:$("breakUnit").value}))}catch(e){}}
+  function load(){try{var s=JSON.parse(localStorage.getItem(KEY)||"null");if(s){
+    $("workVal").value=s.wv;$("workUnit").value=s.wu;$("breakVal").value=s.bv;$("breakUnit").value=s.bu}}catch(e){}}
+
+  function dur(kind){
+    var v=parseFloat($(kind+"Val").value), u=$(kind+"Unit").value;
+    if(!(v>0)) return null;
+    var secs=Math.round(v*(u==="h"?3600:60));
+    if(secs<1||secs>86400) return null;
+    return secs*1000;
+  }
+  function fmt(ms){
+    var s=Math.max(0,Math.ceil(ms/1000)), h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
+    var p=function(n){return String(n).padStart(2,"0")};
+    return h>0 ? h+":"+p(m)+":"+p(x) : p(m)+":"+p(x);
+  }
+  function say(text,isErr){var m=$("msg");m.textContent=text;m.className="msg"+(isErr?" err":"")}
+
+  function render(){
+    var label=mode==="work"?"Focus":"Break";
+    $("phase").textContent=label;
+    $("time").textContent=fmt(remaining);
+    $("count").textContent=sessions+(sessions===1?" session done":" sessions done");
+    bar.style.strokeDashoffset=C*(1-(total?remaining/total:0));
+    document.body.setAttribute("data-mode",mode);
+    document.title=(running?fmt(remaining)+" · ":"")+label+" – Pomodoro timer";
+    $("toggle").textContent=running?"Pause":(remaining<total?"Resume":"Start");
+    ["workVal","workUnit","breakVal","breakUnit"].forEach(function(id){$(id).disabled=running});
+  }
+
+  function load_phase(m){
+    mode=m;
+    total=dur(m==="work"?"work":"break");
+    if(total===null){total=0;remaining=0;return false}
+    remaining=total;return true;
+  }
+
+  function beep(){
+    try{
+      if(!audio) return;
+      [0,0.25,0.5].forEach(function(d){
+        var o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime+d;
+        o.frequency.value=880;g.gain.setValueAtTime(0.0001,t);
+        g.gain.exponentialRampToValueAtTime(0.25,t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
+        o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+0.22);
+      });
+    }catch(e){}
+  }
+
+  function switchPhase(announce){
+    if(mode==="work"&&announce) sessions++;
+    var next=mode==="work"?"break":"work";
+    if(!load_phase(next)){stop();say("Enter a number above 0 for both lengths.",true);render();return}
+    if(running) endAt=Date.now()+remaining;
+    if(announce){beep();$("live").textContent=(next==="work"?"Focus":"Break")+" started"}
+    render();
+  }
+
+  function tick(){
+    remaining=endAt-Date.now();
+    if(remaining<=0) switchPhase(true); else render();
+  }
+  function stop(){running=false;clearInterval(timer);timer=null}
+
+  function toggle(){
+    if(running){remaining=endAt-Date.now();stop();say("Paused. You can change the lengths now.");render();return}
+    if(!total && !load_phase(mode)){say("Enter a number above 0 for both lengths.",true);render();return}
+    if(dur("work")===null||dur("break")===null){say("Enter a number above 0 for both lengths (24 hours max).",true);return}
+    try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();if(audio.state==="suspended")audio.resume()}catch(e){}
+    endAt=Date.now()+remaining;running=true;
+    timer=setInterval(tick,250);
+    say("Running. Pause the timer to change the lengths.");
+    render();
+  }
+
+  function reset(){
+    stop();sessions=0;
+    if(!load_phase("work")){say("Enter a number above 0 for both lengths.",true)}
+    else say("Pause the timer to change the lengths.");
+    render();
+  }
+
+  function settingsChanged(){
+    save();
+    if(running) return;
+    if(dur("work")===null||dur("break")===null){say("Enter a number above 0 for both lengths (24 hours max).",true);return}
+    say("Lengths saved.");
+    load_phase(mode);render();
+  }
+
+  $("toggle").addEventListener("click",toggle);
+  $("reset").addEventListener("click",reset);
+  $("skip").addEventListener("click",function(){
+    if(dur("work")===null||dur("break")===null){say("Enter a number above 0 for both lengths.",true);return}
+    var was=mode;mode=was; switchPhase(false);
+  });
+  ["workVal","workUnit","breakVal","breakUnit"].forEach(function(id){
+    $(id).addEventListener("input",settingsChanged);$(id).addEventListener("change",settingsChanged);
+  });
+  document.addEventListener("keydown",function(e){
+    var t=e.target.tagName;
+    if(e.code==="Space"&&t!=="INPUT"&&t!=="SELECT"&&t!=="BUTTON"){e.preventDefault();toggle()}
+  });
+  document.addEventListener("visibilitychange",function(){if(running)tick()});
+
+  load();reset();
+})();
+</script>
+</body>
+</html>
